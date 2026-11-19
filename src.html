@@ -1,0 +1,442 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wandel door oud Oldenzaal</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Loop door oud Oldenzaal: oude foto's als straatbeeld, de plattegrond van 1626 en een tijdlijn van 1597 tot 1954.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+DW+Pica:ital@0;1&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/*LEAFLET_CSS*/
+</style>
+<style>
+/* Layout: twee standen. Kaart: de plattegrond van 1626 vult het scherm met rechts het verhaal.
+   Straatbeeld: de oude foto vult het scherm, je loopt met pijlen op de grond, de kaart wordt een minikaart. Onderaan altijd de tijdlijn. */
+:root{
+  --ink:#1d2a3a; --ink-2:#2c3d52; --gracht:#6f9a8e; --dak:#c2552f;
+  --papier:#eef0ea; --tekst:#1d2a3a; --zacht:#5b6878; --lijn:#c9d0cc; --paneel:#f8f9f6;
+  --land:#dfe6df;
+  --display:"IM Fell DW Pica","Iowan Old Style",Georgia,serif;
+  --body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --papier:#121821;--tekst:#e6eae6;--zacht:#9aa6b4;--lijn:#2c3846;--paneel:#18202b;--ink:#0d131b;--ink-2:#1b2633;--gracht:#7fb0a2;--dak:#e0764f;--land:#1c2530;color-scheme:dark}}
+:root[data-theme="dark"]{--papier:#121821;--tekst:#e6eae6;--zacht:#9aa6b4;--lijn:#2c3846;--paneel:#18202b;--ink:#0d131b;--ink-2:#1b2633;--gracht:#7fb0a2;--dak:#e0764f;--land:#1c2530;color-scheme:dark}
+
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--papier);color:var(--tekst);font-family:var(--body);font-size:16px;overflow:hidden}
+.app{position:relative;height:100%;display:grid;grid-template-columns:1fr minmax(320px,400px);grid-template-rows:minmax(0,1fr) auto}
+.buhne{grid-column:1;grid-row:1;position:relative;min-height:0;min-width:0}
+#kaart{position:absolute;inset:0;background:var(--land);z-index:1}
+.leaflet-container{background:var(--land);font-family:var(--body)}
+.knop:focus-visible,.tl-jaar:focus-visible,.tl-stap:focus-visible,.pijl:focus-visible,.chip:focus-visible,.zb-knop:focus-visible{outline:3px solid var(--dak);outline-offset:2px}
+
+/* Titel */
+.titel{position:absolute;z-index:500;top:calc(12px + env(safe-area-inset-top,0px));left:max(12px,env(safe-area-inset-left,0px));
+  background:var(--ink);color:#f1f3ee;padding:10px 14px 9px;border-radius:4px;max-width:min(340px,70vw);box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.titel h1{font-family:var(--display);font-weight:400;font-size:1.45rem;line-height:1.1;margin:0;text-wrap:balance}
+.titel p{margin:.25rem 0 0;font-size:.8rem;color:#b9c4cf;line-height:1.35}
+
+/* Markeringen */
+.plek{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;border:2px solid #fff;display:grid;place-items:center;
+  font-weight:700;font-size:.85rem;box-shadow:0 2px 6px rgba(0,0,0,.35);transition:opacity .3s,transform .2s,background .2s;cursor:pointer;position:relative}
+.plek.toekomst{opacity:.35}
+.plek.nu{background:#c2552f;transform:scale(1.25)}
+.plek:hover{transform:scale(1.15)}
+.plek-label{position:absolute;left:34px;top:4px;white-space:nowrap;background:rgba(255,255,255,.92);color:#1d2a3a;font-size:.75rem;font-weight:600;padding:1px 6px;border-radius:3px;pointer-events:none}
+.veraf .plek:not(.nu) .plek-label{display:none}
+.kijkkegel{width:0;height:0;pointer-events:none}
+.kijkkegel div{position:absolute;left:-40px;top:-80px;width:80px;height:80px;transform-origin:40px 80px;
+  background:conic-gradient(from -30deg at 50% 100%, rgba(194,85,47,.55) 0deg 60deg, transparent 60deg);}
+.buiten-label{color:#5b6878;font:italic 1rem var(--display);white-space:nowrap;pointer-events:none}
+.leaflet-overlay-pane path.route{stroke:#c2552f;stroke-dasharray:6 8;stroke-width:3;fill:none;opacity:.8}
+
+/* Paneel (kaartstand) */
+.paneel{grid-column:2;grid-row:1;background:var(--paneel);border-left:1px solid var(--lijn);display:flex;flex-direction:column;min-height:0;overflow:auto}
+.foto{position:relative;background:#101418;cursor:zoom-in}
+.foto img{display:block;width:100%;height:auto;max-height:42vh;object-fit:contain;margin:0 auto}
+.jaar-stempel{position:absolute;left:12px;bottom:12px;background:var(--ink);color:#fff;font-family:var(--display);font-size:1.5rem;line-height:1;padding:6px 10px 4px;border-radius:3px;font-variant-numeric:tabular-nums}
+.inhoud{padding:16px 20px 20px;display:flex;flex-direction:column;gap:10px}
+.soort{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--zacht);font-weight:700}
+.inhoud h2{font-family:var(--display);font-weight:400;font-size:1.7rem;line-height:1.1;margin:0;text-wrap:balance}
+.inhoud p{margin:0;line-height:1.55;max-width:62ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{appearance:none;border:1px solid var(--lijn);background:transparent;color:var(--tekst);font:600 .8rem var(--body);padding:4px 10px;border-radius:999px;cursor:pointer;font-variant-numeric:tabular-nums}
+.chip[aria-pressed="true"]{background:var(--ink-2);border-color:var(--ink-2);color:#fff}
+.route{display:flex;gap:8px;flex-wrap:wrap}
+.knop{appearance:none;border:1px solid var(--lijn);background:transparent;color:var(--tekst);font:600 .9rem var(--body);padding:9px 12px;border-radius:4px;cursor:pointer;flex:1 1 140px;min-width:0;text-align:center;text-decoration:none}
+.knop:hover{border-color:var(--zacht)}
+.knop.hoofd{background:#c2552f;color:#fff;border-color:#c2552f}
+.knop[disabled]{opacity:.4;cursor:default}
+.voetnoot{font-size:.78rem;color:var(--zacht);line-height:1.4;margin-top:auto;padding:0 20px 16px}
+
+/* Straatbeeld */
+.straat{position:absolute;inset:0;z-index:600;background:#0b0e12;overflow:hidden;color:#fff}
+.sb-achter{position:absolute;inset:-40px;background-size:cover;background-position:center;filter:blur(28px) brightness(.45) saturate(.6);transform:scale(1.1)}
+.sb-beeld{position:absolute;inset:0;display:grid;place-items:center}
+.sb-beeld img{width:100%;height:100%;object-fit:contain;transform-origin:50% 60%;animation:rondkijken 30s ease-in-out infinite alternate;cursor:zoom-in;transition:opacity .5s ease-out,transform .5s ease-out}
+@keyframes rondkijken{from{transform:scale(1)}to{transform:scale(1.08) translateX(-1.5%)}}
+.sb-beeld.lopen img{animation:none;transition:transform .45s ease-in,opacity .45s ease-in;transform:scale(1.35);opacity:0}
+.sb-beeld.aankomst img{animation:none;transition:none;opacity:0;transform:scale(.96)}
+.sb-kop{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));left:max(12px,env(safe-area-inset-left,0px));right:260px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.sb-plaats{background:rgba(13,19,27,.82);backdrop-filter:blur(6px);padding:8px 12px;border-radius:4px;max-width:min(520px,100%)}
+.sb-plaats .soort{color:#b9c4cf}
+.sb-plaats h2{font-family:var(--display);font-weight:400;font-size:1.5rem;line-height:1.1;margin:2px 0 0;text-wrap:balance}
+.sb-kop .chips .chip{background:rgba(13,19,27,.75);color:#fff;border-color:rgba(255,255,255,.3)}
+.sb-kop .chips .chip[aria-pressed="true"]{background:#c2552f;border-color:#c2552f}
+.sb-rechts{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.zb-knop{appearance:none;border:0;background:rgba(13,19,27,.82);color:#fff;font:600 .85rem var(--body);padding:8px 12px;border-radius:4px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.zb-knop:hover{background:#2c3d52}
+.sb-jaar{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:calc(100px + env(safe-area-inset-top,0px));font-family:var(--display);font-size:3.2rem;line-height:1;text-shadow:0 2px 12px rgba(0,0,0,.7);font-variant-numeric:tabular-nums;pointer-events:none}
+.sb-verhaal{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:12px;width:min(380px,calc(100% - 24px));background:rgba(13,19,27,.86);backdrop-filter:blur(6px);border-radius:4px;padding:12px 14px;font-size:.92rem;line-height:1.5;max-height:170px;overflow:auto}
+.sb-verhaal p{margin:0}
+.sb-jaar-klein{display:none;color:#f0b9a4}
+/* pijlen op de grond */
+.vloer{position:absolute;left:0;right:0;bottom:200px;height:34%;pointer-events:none;perspective:600px}
+.pijl{pointer-events:auto;position:absolute;bottom:4%;transform:translateX(-50%);appearance:none;border:0;background:none;color:#fff;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px;font:600 .8rem var(--body)}
+.pijl .vorm{width:64px;height:64px;transform:rotateX(58deg) rotate(var(--r,0deg));transition:transform .2s;filter:drop-shadow(0 4px 6px rgba(0,0,0,.6))}
+.pijl:hover .vorm{transform:rotateX(58deg) rotate(var(--r,0deg)) scale(1.15)}
+.pijl .vorm svg{width:100%;height:100%;display:block}
+.pijl .naam{background:rgba(13,19,27,.8);padding:2px 8px;border-radius:3px;white-space:nowrap}
+.pijl.volgende .naam{background:#c2552f}
+/* in straatbeeld krimpt de kaart tot minikaart */
+.app.sb #kaart{inset:auto;left:max(12px,env(safe-area-inset-left,0px));bottom:12px;width:min(260px,40vw);height:180px;z-index:700;border-radius:4px;border:2px solid rgba(255,255,255,.85);box-shadow:0 4px 18px rgba(0,0,0,.5)}
+.app.sb .leaflet-control-zoom,.app.sb .plek-label,.app.sb .buiten-label{display:none}
+.app.sb .titel{display:none}
+.app.sb .kijkkegel div{transform-origin:40px 80px;scale:.55}
+.app.sb{grid-template-columns:1fr}
+.app.sb .paneel{display:none}
+
+/* Tijdlijn */
+.tijdlijn{grid-column:1 / -1;grid-row:2;background:#1d2a3a;color:#e9ede8;position:relative;z-index:800;
+  padding-block:10px calc(12px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}
+.tl-stap{appearance:none;border:1px solid #4a5b70;background:transparent;color:#fff;width:40px;height:40px;border-radius:50%;font-size:1.1rem;cursor:pointer}
+.tl-stap:hover{background:#2c3d52}
+.tl-baan{position:relative;height:56px;min-width:0}
+.tl-lijn{position:absolute;left:0;right:0;top:22px;height:2px;background:#4a5b70}
+.tl-voortgang{position:absolute;left:0;top:22px;height:2px;background:#6f9a8e;transition:width .35s}
+.tl-jaar{position:absolute;top:0;transform:translateX(-50%);appearance:none;background:none;border:0;color:#b9c4cf;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 2px;font:600 .8rem var(--body);font-variant-numeric:tabular-nums}
+.tl-jaar::before{content:"";width:12px;height:12px;border-radius:50%;background:#1d2a3a;border:2px solid #7c8b9c;margin-top:16px;transition:all .2s}
+.tl-jaar.geweest::before{border-color:#6f9a8e;background:#6f9a8e}
+.tl-jaar.nu{color:#fff}
+.tl-jaar.nu::before{background:#c2552f;border-color:#fff;transform:scale(1.35)}
+.tl-label{font-size:.7rem;font-weight:400;color:#8f9cab;white-space:nowrap}
+.tl-jaar.nu .tl-label{color:#dfe5ea}
+
+.lichtbak{position:fixed;inset:0;z-index:2000;background:rgba(8,11,15,.94);display:grid;place-items:center;padding:24px;cursor:zoom-out}
+.lichtbak img{max-width:100%;max-height:100%;object-fit:contain}
+
+@media (max-width: 1100px){ .tl-label{display:none} .tl-baan{height:44px} }
+@media (max-width: 820px){
+  .app{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto auto}
+  .paneel{grid-column:1;grid-row:2;border-left:0;border-top:1px solid var(--lijn);max-height:46vh}
+  .tijdlijn{grid-row:3}
+  .app.sb{grid-template-rows:minmax(0,1fr) auto}
+  .app.sb .tijdlijn{grid-row:2}
+  .foto img{max-height:24vh}
+  .inhoud{padding:12px 16px 14px;gap:8px}
+  .inhoud h2{font-size:1.35rem}
+  .voetnoot{display:none}
+  .titel h1{font-size:1.15rem}.titel p{display:none}
+  .tl-jaar{font-size:.68rem}
+  .sb-kop{right:132px;top:calc(60px + env(safe-area-inset-top,0px))}
+  .app.sb #kaart{left:auto;right:max(12px,env(safe-area-inset-right,0px));top:calc(60px + env(safe-area-inset-top,0px));bottom:auto;width:110px;height:96px}
+  .pijl:not(.volgende) .naam{display:none}
+  .sb-jaar-klein{display:inline}
+  .sb-rechts{flex-direction:row}
+  .sb-plaats h2{font-size:1.2rem}
+  .sb-verhaal{left:12px;right:12px;width:auto;bottom:12px;max-height:110px;font-size:.85rem}
+  .sb-jaar{display:none}
+  .vloer{bottom:120px;height:40%}
+  .pijl .vorm{width:52px;height:52px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app" id="app">
+  <div class="buhne">
+    <div id="kaart" role="application" aria-label="Plattegrond van Oldenzaal uit 1626"></div>
+    <div class="titel">
+      <h1>Wandel door oud Oldenzaal</h1>
+      <p>Loop over de plattegrond van 1626 en stap in de oude foto's.</p>
+    </div>
+
+    <section class="straat" id="straat" hidden aria-label="Straatbeeld">
+      <div class="sb-achter" id="sb-achter"></div>
+      <div class="sb-beeld" id="sb-beeld"><img id="sb-img" alt=""></div>
+      <div class="vloer" id="vloer"></div>
+      <div class="sb-jaar" id="sb-jaar"></div>
+      <div class="sb-kop">
+        <div class="sb-plaats"><div class="soort"><span class="sb-jaar-klein" id="sb-jaar-klein"></span><span id="sb-soort"></span></div><h2 id="sb-titel"></h2></div>
+        <div class="chips" id="sb-chips"></div>
+      </div>
+      <div class="sb-rechts">
+        <button class="zb-knop" id="naar-kaart" type="button">Naar de kaart</button>
+        <a class="zb-knop" id="sb-nu" target="_blank" rel="noopener">Zo ziet het er nu uit ↗</a>
+      </div>
+      <div class="sb-verhaal"><p id="sb-tekst"></p></div>
+    </section>
+  </div>
+
+  <aside class="paneel" aria-live="polite">
+    <div class="foto" id="foto" title="Klik om groot te bekijken">
+      <img id="foto-img" alt="">
+      <div class="jaar-stempel" id="jaar"></div>
+    </div>
+    <div class="inhoud">
+      <div class="soort" id="soort"></div>
+      <h2 id="kop"></h2>
+      <div class="chips" id="chips"></div>
+      <p id="tekst"></p>
+      <div class="route">
+        <button class="knop hoofd" id="instappen" type="button">Stap in het straatbeeld</button>
+        <button class="knop" id="volgende" type="button">Volgende plek →</button>
+      </div>
+    </div>
+    <p class="voetnoot">De kaart toont de stad binnen de wallen in 1626. Plekken daarbuiten liggen op de lichte rand. Alle punten staan bij benadering.</p>
+  </aside>
+
+  <nav class="tijdlijn" aria-label="Tijdlijn">
+    <button class="tl-stap" id="tl-terug" type="button" aria-label="Terug in de tijd">◀</button>
+    <div class="tl-baan" id="tl-baan"><div class="tl-lijn"></div><div class="tl-voortgang" id="tl-voortgang"></div></div>
+    <button class="tl-stap" id="tl-verder" type="button" aria-label="Verder in de tijd">▶</button>
+  </nav>
+</div>
+<div class="lichtbak" id="lichtbak" hidden><img id="lichtbak-img" alt=""></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+"use strict";
+/* ---------- gegevens ---------- */
+const stad=[
+ {jaar:1597,kop:"Maurits verovert Oldenzaal",img:"img/maurits-1597.jpg",
+  tekst:"In oktober 1597 trok prins Maurits met het Staatse leger door het oosten van het land en veroverde in korte tijd een hele reeks steden. Oldenzaal was er een van. Op de prent ligt de ronde stad midden in het beleg, met soldaten en legerkampen eromheen."},
+ {jaar:1605,kop:"Spinola neemt de stad terug",img:"img/spinola-1605.jpg",
+  tekst:"Acht jaar later, in augustus 1605, nam de Spaanse legeraanvoerder Ambrogio Spinola Oldenzaal weer in. De stad bleef daarna ruim twintig jaar in Spaanse handen. Zie je hoe de straten als spaken naar het midden lopen? Dat patroon herken je op de grote kaart."},
+ {jaar:1626,kop:"Het beleg van 1626",img:"img/beleg-1626.jpg",
+  tekst:"In 1626 belegerden Staatse troepen Oldenzaal opnieuw en namen de stad in. Daarna werden de vestingwerken afgebroken. De plattegrond waar je overheen loopt, laat Oldenzaal zien zoals het toen was. Dat staat ook in de Latijnse titel linksonder op de kaart."}
+];
+// Plekken in wandelvolgorde. kijk = kijkrichting van de foto in graden (0 = noord), alleen als die uit de foto zelf blijkt.
+const plekken=[
+ {id:"station",naam:"Station",adres:"Stationsplein",lat:52.3065,lon:6.93345,buiten:true,momenten:[
+   {jaar:1900,jaarTekst:"ca. 1900",chip:"ca. 1900",img:"img/station-1900.jpg",kop:"Aankomst op het station",
+    tekst:"We beginnen waar veel bezoekers rond 1900 aankwamen: op het station van de Hollandsche IJzeren Spoorweg-Maatschappij, een flink eind ten zuiden van de oude stad. Op het perron staat een groep mensen op de fotograaf te wachten."},
+   {jaar:1930,jaarTekst:"ca. 1930",chip:"ca. 1930",img:"img/station-1930.jpg",kop:"Het stationsemplacement",
+    tekst:"Een ansichtkaart van hetzelfde station, zo'n dertig jaar later. Over het hele perron loopt nu een lange overkapping. Een paar reizigers wachten links op de trein."},
+   {jaar:1950,jaarTekst:"10 nov. 1950",chip:"1950",img:"img/station-1950.jpg",kop:"Terug uit Rusland",
+    tekst:"Op 10 november 1950 komen Nederlanders terug die in de oorlog in Duitse krijgsdienst waren en daarna in Russische krijgsgevangenschap zaten. Langs het spoor in Oldenzaal staan mensen bij de trein te wachten. De foto is aan het spoor genomen, vermoedelijk bij het station."}]},
+ {id:"spoorstraat",naam:"Spoorstraat 36",adres:"Spoorstraat",lat:52.3062560,lon:6.9293430,buiten:true,momenten:[
+   {jaar:1947,jaarTekst:"nov. 1947",chip:"1947",img:"img/spoorstraat-1947.jpg",kop:"Langs het spoor",
+    tekst:"Spoorstraat 36 in november 1947: een strak, nieuw gebouw van baksteen. Op de voorgrond ligt een draaischijf in de rails. De foto hoort bij een reeks over de wederopbouw van Oldenzaal na de Tweede Wereldoorlog."}]},
+ {id:"molkenboer",naam:"Textielfabriek Molkenboer",adres:"Zuidwal en Prins Hendrikstraat",lat:52.3101940,lon:6.9280506,momenten:[
+   {jaar:1947,jaarTekst:"nov. 1947",chip:"1947 · buiten",img:"img/zuidwal-1947.jpg",kop:"De fabriek aan de Zuidwal",
+    tekst:"Waar in 1626 de stadsmuur liep, stond later de textielfabriek Molkenboer. In november 1947 staat er een halfronde loods met een berg puin ervoor."},
+   {jaar:1947,jaarTekst:"nov. 1947",chip:"1947 · binnen",img:"img/molkenboer-binnen-1947.jpg",kop:"In de fabriekshal",
+    tekst:"Binnen in de fabriek: een hoge, gebogen hal met lichtstraten in het dak. Langs de wand staan rekken vol stof, in het midden werktafels."},
+   {jaar:1947,jaarTekst:"nov. 1947",chip:"1947 · Prins Hendrikstraat",img:"img/prinshendrikstraat-1947.jpg",kop:"Aan de Prins Hendrikstraat",
+    tekst:"Om de hoek, aan de Prins Hendrikstraat, staat een bakstenen gebouw met hetzelfde gebogen dak. Ook deze foto is in november 1947 gemaakt voor de reeks over de wederopbouw."}]},
+ {id:"ganzenmarkt",naam:"Ganzenmarkt",adres:"Ganzenmarkt",lat:52.3122146,lon:6.9308019,kijk:265,momenten:[
+   {jaar:1954,jaarTekst:"28 jan. 1954",chip:"1954 · plein",img:"img/ganzenmarkt-plein-1954.jpg",kop:"Het plein is een ijsbaan",
+    tekst:"Op 28 januari 1954 is het plein ondergelopen en bevroren, en half Oldenzaal staat op de schaats. Het is de plek waar later het gemeentehuis aan de Ganzenmarkt kwam. Je kijkt naar de Plechelmuskerk."},
+   {jaar:1954,jaarTekst:"28 jan. 1954",chip:"1954 · schaatsers",img:"img/ganzenmarkt-1954.jpg",kop:"Schaatsen op de Ganzenmarkt",
+    tekst:"Dezelfde dag, wat dichter bij de kerk. Schaatsers komen arm in arm op de fotograaf af."},
+   {jaar:1954,jaarTekst:"28 jan. 1954",chip:"1954 · naar de kerk",img:"img/ganzenmarkt-kerk-1954.jpg",kop:"Drukte voor de kerk",
+    tekst:"Nog een foto van die dag. Het ijs loopt door tot vlak voor de kerk, en overal staan en schaatsen mensen."}]},
+ {id:"kerk",naam:"Plechelmuskerk",adres:"Sint Plechelmusplein",lat:52.3124084,lon:6.9287659,kijk:0,momenten:[
+   {jaar:1734,jaarTekst:"1734",chip:"1734",img:"img/kerk-1734.jpg",kop:"De Plechelmuskerk",
+    tekst:"Een tekening uit 1734 van de Sint-Plechelmuskerk, met de zware toren en het hoge koor. De kerk is vernoemd naar Plechelmus, die volgens de overlevering het christendom naar deze streek bracht. Tegenwoordig heet ze de Sint-Plechelmusbasiliek, en de Oldenzalers noemen haar Ome Jan."}]},
+ {id:"kerkstraat",naam:"Kerkstraat 2",adres:"Kerkstraat",lat:52.3129751,lon:6.9291266,momenten:[
+   {jaar:1947,jaarTekst:"nov. 1947",chip:"1947",img:"img/kerkstraat-1947.jpg",kop:"Een hoekpand aan de Kerkstraat",
+    tekst:"Vanaf de kerk loop je de Kerkstraat in, richting de Groote Markt. Op nummer 2 staat in november 1947 dit hoekpand, met een winkel op de begane grond en een lantaarn aan de gevel."}]},
+ {id:"eschstraat",naam:"Eschstraat",adres:"Glinde-Hooiland",lat:52.3167226,lon:6.9289828,buiten:true,momenten:[
+   {jaar:1947,jaarTekst:"nov. 1947",chip:"1947 · bouwplaats",img:"img/eschstraat-1947.jpg",kop:"Een nieuwe wijk in aanbouw",
+    tekst:"Ten noorden van de oude stad wordt in november 1947 volop gebouwd. Aan de Eschstraat staan de eerste muren tussen de steigers, en overal liggen bouwmaterialen."},
+   {jaar:1947,jaarTekst:"nov. 1947",chip:"1947 · keuken",img:"img/eschstraat-keuken-1947.jpg",kop:"Een splinternieuwe keuken",
+    tekst:"Binnen in een van de nieuwe huizen: een keuken met een tegelwand, een aanrecht en kastjes aan de muur."}]},
+ {id:"glindestraat",naam:"Glindestraat",adres:"Glinde-Hooiland",lat:52.3174128,lon:6.9281424,buiten:true,momenten:[
+   {jaar:1947,jaarTekst:"nov. 1947",chip:"1947",img:"img/glindestraat-1947.jpg",kop:"Nieuwe rijtjeshuizen",
+    tekst:"Aan de Glindestraat zijn de huizen al klaar: lange rijen van baksteen met hoge schoorstenen. De tuinen zijn nog kale grond."}]},
+ {id:"hooiland",naam:"Hooiland",adres:"Glinde-Hooiland",lat:52.3150,lon:6.9240,buiten:true,momenten:[
+   {jaar:1947,jaarTekst:"nov. 1947",chip:"1947 · fundering",img:"img/hooiland-fundering-1947.jpg",kop:"De fundering ligt er",
+    tekst:"In het Hooiland is de fundering van een nieuw blok huizen gelegd. Achter de bouwplaats staan al huizen. Hier eindigt de wandeling."},
+   {jaar:1947,jaarTekst:"nov. 1947",chip:"1947 · muren",img:"img/hooiland-muren-1947.jpg",kop:"De muren groeien",
+    tekst:"Een paar huizen verder staan de muren al tot boven de ramen. Houten palen markeren waar het dak komt."}]}
+];
+const byId=Object.fromEntries(plekken.map(p=>[p.id,p]));
+
+/* ---------- kaart: echte coördinaten naar de kaart van 1626 ---------- */
+const W=3840,H=2886;
+const KERK=[52.3124084,6.9287659];
+function geoNaarKaart(lat,lon){
+  const n=(lat-KERK[0])*111320, e=(lon-KERK[1])*111320*Math.cos(52.31*Math.PI/180);
+  const r=Math.PI/4, x=e*Math.cos(r)+n*Math.sin(r), y=-(-e*Math.sin(r)+n*Math.cos(r));
+  const S=3840/2212, px=(1165+x*2)*S, py=(810+y*2)*S;
+  return [H-py,px];
+}
+const kaart=L.map("kaart",{crs:L.CRS.Simple,minZoom:-3.5,maxZoom:1.5,zoomSnap:.25,attributionControl:false,zoomControl:false});
+L.control.zoom({position:"topright",zoomInTitle:"Inzoomen",zoomOutTitle:"Uitzoomen"}).addTo(kaart);
+const grens=[[0,0],[H,W]];
+kaart.setMaxBounds([[-H*.5,-W*.2],[H*1.25,W*1.15]]);
+L.imageOverlay("img/kaart.jpg",grens).addTo(kaart);
+const label=(lat,lon,t)=>L.marker(geoNaarKaart(lat,lon),{icon:L.divIcon({className:"",html:`<div class="buiten-label">${t}</div>`,iconSize:[0,0]}),interactive:false,keyboard:false}).addTo(kaart);
+label(52.3180,6.9238,"Glinde en Hooiland");
+label(52.3072,6.9318,"bij het spoor");
+L.polyline(plekken.map(p=>geoNaarKaart(p.lat,p.lon)),{className:"route",interactive:false}).addTo(kaart);
+const markers={};
+plekken.forEach((p,n)=>{
+  const icon=L.divIcon({className:"",iconSize:[30,30],iconAnchor:[15,15],html:`<div class="plek" data-id="${p.id}">${n+1}<span class="plek-label">${p.naam}</span></div>`});
+  markers[p.id]=L.marker(geoNaarKaart(p.lat,p.lon),{icon,title:p.naam}).addTo(kaart).on("click",()=>kiesPlek(p.id));
+});
+const kegel=L.marker([0,0],{icon:L.divIcon({className:"kijkkegel",html:"<div></div>",iconSize:[0,0]}),interactive:false,keyboard:false});
+const zoomKlasse=()=>document.getElementById("kaart").classList.toggle("veraf",kaart.getZoom()<-0.6);
+kaart.on("zoomend",zoomKlasse);
+
+/* ---------- toestand ---------- */
+let modus="kaart";
+let huidig={soort:"stad",i:2};
+const jaren=[...new Set([...stad.map(s=>s.jaar),...plekken.flatMap(p=>p.momenten.map(m=>m.jaar))])].sort((a,b)=>a-b);
+const tlNaam={1597:"Maurits",1605:"Spinola",1626:"Beleg en kaart",1734:"Tekening kerk",1900:"Station",1930:"Station",1947:"Wederopbouw",1950:"Terug uit Rusland",1954:"IJswinter"};
+const huidigJaar=()=>huidig.soort==="stad"?stad[huidig.i].jaar:byId[huidig.id].momenten[huidig.m].jaar;
+
+/* ---------- geometrie ---------- */
+function peiling(a,b){const f1=a.lat*Math.PI/180,f2=b.lat*Math.PI/180,dl=(b.lon-a.lon)*Math.PI/180;
+  const y=Math.sin(dl)*Math.cos(f2),x=Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dl);return (Math.atan2(y,x)*180/Math.PI+360)%360}
+function afstand(a,b){const R=6371e3,f1=a.lat*Math.PI/180,f2=b.lat*Math.PI/180,df=f2-f1,dl=(b.lon-a.lon)*Math.PI/180;
+  const h=Math.sin(df/2)**2+Math.cos(f1)*Math.cos(f2)*Math.sin(dl/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function kijkrichting(p){
+  if(p.kijk!=null)return p.kijk;
+  const i=plekken.indexOf(p);
+  return i<plekken.length-1?peiling(p,plekken[i+1]):peiling(plekken[i-1],p);
+}
+
+/* ---------- tijdlijn ---------- */
+const baan=document.getElementById("tl-baan");
+const pos=j=>4+(jaren.indexOf(j)/(jaren.length-1))*92;
+jaren.forEach(j=>{
+  const b=document.createElement("button");b.type="button";b.className="tl-jaar";b.dataset.jaar=j;b.style.left=pos(j)+"%";
+  b.innerHTML=`<span>${j===1900||j===1930?"±"+j:j}</span><span class="tl-label">${tlNaam[j]||""}</span>`;
+  b.addEventListener("click",()=>naarJaar(j));baan.appendChild(b);
+});
+function naarJaar(j){
+  const s=stad.findIndex(x=>x.jaar===j);
+  if(s>-1){huidig={soort:"stad",i:s};if(modus==="straat")naarKaart();else render(true);return}
+  if(huidig.soort==="plek"){const m=byId[huidig.id].momenten.findIndex(x=>x.jaar===j);if(m>-1){huidig={soort:"plek",id:huidig.id,m};render(true);return}}
+  const p=plekken.find(p=>p.momenten.some(m=>m.jaar===j));
+  huidig={soort:"plek",id:p.id,m:p.momenten.findIndex(m=>m.jaar===j)};render(true);
+}
+const stapJaar=d=>{const k=jaren.indexOf(huidigJaar())+d;if(k>=0&&k<jaren.length)naarJaar(jaren[k])};
+document.getElementById("tl-terug").onclick=()=>stapJaar(-1);
+document.getElementById("tl-verder").onclick=()=>stapJaar(1);
+
+function kiesPlek(id){
+  const p=byId[id],j=huidigJaar();
+  let best=0;p.momenten.forEach((m,i)=>{if(Math.abs(m.jaar-j)<Math.abs(p.momenten[best].jaar-j))best=i});
+  huidig={soort:"plek",id,m:best};render(true);
+}
+
+/* ---------- weergave ---------- */
+const txt=(id,t)=>{document.getElementById(id).textContent=t};
+const zet=(id,src,alt)=>{const i=document.getElementById(id);i.src=src;i.alt=alt};
+function chips(doel,p){
+  doel.innerHTML="";if(p.momenten.length<2)return;
+  p.momenten.forEach((m,i)=>{const c=document.createElement("button");c.type="button";c.className="chip";c.textContent=m.chip;
+    c.setAttribute("aria-pressed",String(i===huidig.m));c.onclick=()=>{huidig={soort:"plek",id:p.id,m:i};render(false)};doel.appendChild(c)});
+}
+function render(vlieg){
+  const j=huidigJaar();
+  document.querySelectorAll(".tl-jaar").forEach(b=>{const v=+b.dataset.jaar;b.classList.toggle("nu",v===j);b.classList.toggle("geweest",v<j);b.setAttribute("aria-current",v===j?"true":"false")});
+  document.getElementById("tl-voortgang").style.width=pos(j)+"%";
+  plekken.forEach(p=>{const el=markers[p.id].getElement()?.querySelector(".plek");if(!el)return;
+    el.classList.toggle("nu",huidig.soort==="plek"&&huidig.id===p.id);
+    el.classList.toggle("toekomst",Math.min(...p.momenten.map(m=>m.jaar))>j)});
+  const v=document.getElementById("volgende"),inst=document.getElementById("instappen");
+  if(huidig.soort==="stad"){
+    const s=stad[huidig.i];
+    zet("foto-img",s.img,s.kop);txt("jaar",s.jaar);txt("soort","De hele stad");txt("kop",s.kop);txt("tekst",s.tekst);
+    document.getElementById("chips").innerHTML="";
+    inst.textContent="Begin de wandeling in het straatbeeld";v.hidden=true;
+    kaart.removeLayer(kegel);
+    if(vlieg)kaart.flyToBounds(grens,{duration:.8});
+  }else{
+    const p=byId[huidig.id],m=p.momenten[huidig.m],n=plekken.indexOf(p);
+    zet("foto-img",m.img,m.kop);txt("jaar",m.jaarTekst);txt("soort",`Plek ${n+1} van ${plekken.length} · ${p.naam}`);txt("kop",m.kop);txt("tekst",m.tekst);
+    chips(document.getElementById("chips"),p);
+    inst.textContent="Stap in het straatbeeld";v.hidden=false;v.disabled=n===plekken.length-1;
+    v.textContent=n===plekken.length-1?"Einde van de route":`Volgende: ${plekken[n+1].naam} →`;
+    const ll=geoNaarKaart(p.lat,p.lon);kegel.setLatLng(ll).addTo(kaart);
+    const k=kegel.getElement()?.firstChild;if(k)k.style.transform=`rotate(${kijkrichting(p)-45}deg)`;
+    if(vlieg){if(modus==="straat")kaart.setView(ll,p.buiten?-2.75:-1.5,{animate:true});else kaart.flyTo(ll,p.buiten?-1.25:-0.25,{duration:.8})}
+    if(modus==="straat")vulStraat(p,m);
+  }
+  document.querySelector(".paneel").scrollTop=0;
+}
+
+/* ---------- straatbeeld ---------- */
+const app=document.getElementById("app"),straat=document.getElementById("straat"),beeld=document.getElementById("sb-beeld");
+function vulStraat(p,m){
+  zet("sb-img",m.img,m.kop);
+  document.getElementById("sb-achter").style.backgroundImage=`url("${m.img}")`;
+  txt("sb-jaar",m.jaarTekst);txt("sb-jaar-klein",m.jaarTekst+" · ");txt("sb-soort",`Plek ${plekken.indexOf(p)+1} · ${p.naam}${p.adres&&p.adres!==p.naam?" · "+p.adres:""}`);txt("sb-titel",m.kop);txt("sb-tekst",m.tekst);
+  chips(document.getElementById("sb-chips"),p);
+  document.getElementById("sb-nu").href=`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${p.lat},${p.lon}&heading=${Math.round(kijkrichting(p))}`;
+  const vloer=document.getElementById("vloer");vloer.innerHTML="";
+  const i=plekken.indexOf(p),kijk=kijkrichting(p),buren=new Map();
+  if(i<plekken.length-1)buren.set(plekken[i+1].id,"volgende");
+  if(i>0)buren.set(plekken[i-1].id,"vorige");
+  plekken.filter(q=>q!==p&&!buren.has(q.id)&&afstand(p,q)<260).slice(0,2).forEach(q=>buren.set(q.id,"buur"));
+  const gebruikt=[];
+  buren.forEach((rol,id)=>{
+    const q=byId[id],rel=((peiling(p,q)-kijk+540)%360)-180;
+    let x=50+Math.max(-1,Math.min(1,rel/110))*36;
+    for(let t=0;t<6&&gebruikt.some(g=>Math.abs(g-x)<18);t++)x+=x<=50?-18:18;
+    x=Math.max(12,Math.min(88,x));gebruikt.push(x);
+    const d=Math.round(afstand(p,q)/10)*10;
+    const b=document.createElement("button");b.type="button";b.className="pijl "+rol;b.style.left=x+"%";b.style.setProperty("--r",rel+"deg");
+    b.setAttribute("aria-label",`Loop naar ${q.naam}, ${d} meter`);
+    b.innerHTML=`<span class="vorm"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 6 58 50 32 38 6 50Z" fill="${rol==="volgende"?"#c2552f":"#ffffff"}" stroke="rgba(0,0,0,.35)" stroke-width="2"/></svg></span><span class="naam">${q.naam} · ${d} m</span>`;
+    b.onclick=()=>loop(id);vloer.appendChild(b);
+  });
+}
+function loop(id){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches){kiesPlek(id);return}
+  beeld.classList.add("lopen");
+  setTimeout(()=>{kiesPlek(id);beeld.classList.remove("lopen");beeld.classList.add("aankomst");
+    requestAnimationFrame(()=>requestAnimationFrame(()=>beeld.classList.remove("aankomst")))},430);
+}
+function toonStraat(){
+  if(huidig.soort==="stad")huidig={soort:"plek",id:plekken[0].id,m:0};
+  modus="straat";straat.hidden=false;app.classList.add("sb");
+  render(false);
+  setTimeout(()=>{kaart.invalidateSize();render(true)},40);
+}
+function naarKaart(){
+  modus="kaart";straat.hidden=true;app.classList.remove("sb");
+  setTimeout(()=>{kaart.invalidateSize();render(true)},40);
+}
+document.getElementById("instappen").onclick=toonStraat;
+document.getElementById("naar-kaart").onclick=naarKaart;
+document.getElementById("volgende").onclick=()=>{const n=plekken.indexOf(byId[huidig.id]);if(n<plekken.length-1)kiesPlek(plekken[n+1].id)};
+const lb=document.getElementById("lichtbak");
+function vergroot(img){zet("lichtbak-img",img.src,img.alt);lb.hidden=false}
+document.getElementById("sb-img").onclick=e=>vergroot(e.currentTarget);
+document.getElementById("foto").onclick=()=>vergroot(document.getElementById("foto-img"));
+lb.onclick=()=>{lb.hidden=true};
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){if(!lb.hidden)lb.hidden=true;else if(modus==="straat")naarKaart()}
+  if(modus==="straat"&&huidig.soort==="plek"&&!e.shiftKey){
+    const n=plekken.indexOf(byId[huidig.id]);
+    if(e.key==="ArrowUp"&&n<plekken.length-1){e.preventDefault();loop(plekken[n+1].id)}
+    if(e.key==="ArrowDown"&&n>0){e.preventDefault();loop(plekken[n-1].id)}
+  }
+  if(e.shiftKey&&e.key==="ArrowRight")stapJaar(1);
+  if(e.shiftKey&&e.key==="ArrowLeft")stapJaar(-1);
+});
+
+kaart.fitBounds(grens);zoomKlasse();
+render(false);
+</script>
