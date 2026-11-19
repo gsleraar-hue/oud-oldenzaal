@@ -75,11 +75,13 @@ body{background:var(--papier);color:var(--tekst);font-family:var(--body);font-si
 .straat{position:absolute;inset:0;z-index:600;background:#0b0e12;overflow:hidden;color:#fff}
 .sb-achter{position:absolute;inset:-40px;background-size:cover;background-position:center;filter:blur(28px) brightness(.45) saturate(.6);transform:scale(1.1)}
 .sb-beeld{position:absolute;inset:0;display:grid;place-items:center}
-.sb-beeld img{width:100%;height:100%;object-fit:contain;transform-origin:50% 60%;animation:rondkijken 30s ease-in-out infinite alternate;cursor:zoom-in;transition:opacity .5s ease-out,transform .5s ease-out}
-@keyframes rondkijken{from{transform:scale(1)}to{transform:scale(1.08) translateX(-1.5%)}}
+.sb-beeld.heel img{object-fit:contain}
+.sb-beeld img{width:100%;height:100%;object-fit:cover;object-position:50% var(--focus,60%);transform-origin:50% var(--focus,60%);animation:rondkijken 30s ease-in-out infinite alternate;cursor:zoom-in;transition:opacity .5s ease-out,transform .5s ease-out}
+@keyframes rondkijken{from{transform:scale(var(--zoom,1))}to{transform:scale(calc(var(--zoom,1) * 1.07)) translateX(-1.5%)}}
+.sb-beeld.heel img{--zoom:1}
 .sb-beeld.lopen img{animation:none;transition:transform .45s ease-in,opacity .45s ease-in;transform:scale(1.35);opacity:0}
 .sb-beeld.aankomst img{animation:none;transition:none;opacity:0;transform:scale(.96)}
-.sb-kop{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));left:max(12px,env(safe-area-inset-left,0px));right:260px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.sb-kop{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));left:max(12px,env(safe-area-inset-left,0px));right:280px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .sb-plaats{background:rgba(13,19,27,.82);backdrop-filter:blur(6px);padding:8px 12px;border-radius:4px;max-width:min(520px,100%)}
 .sb-plaats .soort{color:#b9c4cf}
 .sb-plaats h2{font-family:var(--display);font-weight:400;font-size:1.5rem;line-height:1.1;margin:2px 0 0;text-wrap:balance}
@@ -89,11 +91,12 @@ body{background:var(--papier);color:var(--tekst);font-family:var(--body);font-si
 .zb-knop{appearance:none;border:0;background:rgba(13,19,27,.82);color:#fff;font:600 .85rem var(--body);padding:8px 12px;border-radius:4px;cursor:pointer;text-decoration:none;white-space:nowrap}
 .zb-knop:hover{background:#2c3d52}
 .sb-jaar{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:calc(100px + env(safe-area-inset-top,0px));font-family:var(--display);font-size:3.2rem;line-height:1;text-shadow:0 2px 12px rgba(0,0,0,.7);font-variant-numeric:tabular-nums;pointer-events:none}
-.sb-verhaal{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:12px;width:min(380px,calc(100% - 24px));background:rgba(13,19,27,.86);backdrop-filter:blur(6px);border-radius:4px;padding:12px 14px;font-size:.92rem;line-height:1.5;max-height:170px;overflow:auto}
+.sb-verhaal{width:min(520px,100%);background:rgba(13,19,27,.86);backdrop-filter:blur(6px);border-radius:4px;padding:12px 14px;font-size:.92rem;line-height:1.5;max-height:170px;overflow:auto}
 .sb-verhaal p{margin:0}
-.sb-jaar-klein{display:none;color:#f0b9a4}
+.sb-jaar-klein{color:#f0b9a4}
+.sb-jaar{display:none}
 /* pijlen op de grond */
-.vloer{position:absolute;left:0;right:0;bottom:200px;height:34%;pointer-events:none;perspective:600px}
+.vloer{position:absolute;left:0;right:0;bottom:8px;height:30%;pointer-events:none;perspective:600px}
 .pijl{pointer-events:auto;position:absolute;bottom:4%;transform:translateX(-50%);appearance:none;border:0;background:none;color:#fff;cursor:pointer;
   display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px;font:600 .8rem var(--body)}
 .pijl .vorm{width:64px;height:64px;transform:rotateX(58deg) rotate(var(--r,0deg));transition:transform .2s;filter:drop-shadow(0 4px 6px rgba(0,0,0,.6))}
@@ -102,7 +105,7 @@ body{background:var(--papier);color:var(--tekst);font-family:var(--body);font-si
 .pijl .naam{background:rgba(13,19,27,.8);padding:2px 8px;border-radius:3px;white-space:nowrap}
 .pijl.volgende .naam{background:#c2552f}
 /* in straatbeeld krimpt de kaart tot minikaart */
-.app.sb #kaart{inset:auto;left:max(12px,env(safe-area-inset-left,0px));bottom:12px;width:min(260px,40vw);height:180px;z-index:700;border-radius:4px;border:2px solid rgba(255,255,255,.85);box-shadow:0 4px 18px rgba(0,0,0,.5)}
+.app.sb #kaart{inset:auto;right:max(12px,env(safe-area-inset-right,0px));top:calc(136px + env(safe-area-inset-top,0px));width:min(240px,30vw);height:160px;z-index:700;border-radius:4px;border:2px solid rgba(255,255,255,.85);box-shadow:0 4px 18px rgba(0,0,0,.5)}
 .app.sb .leaflet-control-zoom,.app.sb .plek-label,.app.sb .buiten-label{display:none}
 .app.sb .titel{display:none}
 .app.sb .kijkkegel div{transform-origin:40px 80px;scale:.55}
@@ -149,10 +152,11 @@ body{background:var(--papier);color:var(--tekst);font-family:var(--body);font-si
   .pijl:not(.volgende) .naam{display:none}
   .sb-jaar-klein{display:inline}
   .sb-rechts{flex-direction:row}
+  #sb-heel{display:none}
   .sb-plaats h2{font-size:1.2rem}
-  .sb-verhaal{left:12px;right:12px;width:auto;bottom:12px;max-height:110px;font-size:.85rem}
+  .sb-verhaal{max-height:96px;font-size:.85rem}
   .sb-jaar{display:none}
-  .vloer{bottom:120px;height:40%}
+  .vloer{bottom:8px;height:32%}
   .pijl .vorm{width:52px;height:52px}
 }
 @media (max-height: 560px){
@@ -182,12 +186,13 @@ body{background:var(--papier);color:var(--tekst);font-family:var(--body);font-si
       <div class="sb-kop">
         <div class="sb-plaats"><div class="soort"><span class="sb-jaar-klein" id="sb-jaar-klein"></span><span id="sb-soort"></span></div><h2 id="sb-titel"></h2></div>
         <div class="chips" id="sb-chips"></div>
-      </div>
+        <div class="sb-verhaal"><p id="sb-tekst"></p></div>
+        </div>
       <div class="sb-rechts">
         <button class="zb-knop" id="naar-kaart" type="button">Naar de kaart</button>
         <a class="zb-knop" id="sb-nu" target="_blank" rel="noopener">Zo ziet het er nu uit ↗</a>
+        <button class="zb-knop" id="sb-heel" type="button">Hele foto</button>
       </div>
-      <div class="sb-verhaal"><p id="sb-tekst"></p></div>
     </section>
   </div>
 
@@ -276,6 +281,10 @@ const plekken=[
     tekst:"Een paar huizen verder staan de muren al tot boven de ramen. Houten palen markeren waar het dak komt."}]}
 ];
 const byId=Object.fromEntries(plekken.map(p=>[p.id,p]));
+const focus={"station-1900":55,"station-1930":55,"station-1950":65,"spoorstraat-1947":65,"zuidwal-1947":75,"molkenboer-binnen-1947":60,"prinshendrikstraat-1947":65,
+  "ganzenmarkt-plein-1954":55,"ganzenmarkt-1954":60,"ganzenmarkt-kerk-1954":50,"kerk-1734":45,"kerkstraat-1947":55,"eschstraat-1947":80,"eschstraat-keuken-1947":60,
+  "glindestraat-1947":80,"hooiland-fundering-1947":75,"hooiland-muren-1947":70};
+const zoom={"glindestraat-1947":1.3,"eschstraat-1947":1.25,"hooiland-fundering-1947":1.3,"hooiland-muren-1947":1.15,"zuidwal-1947":1.25,"spoorstraat-1947":1.1,"station-1950":1.1};
 
 /* ---------- kaart: echte coördinaten naar de kaart van 1626 ---------- */
 const W=3840,H=2886;
@@ -388,6 +397,9 @@ function render(vlieg){
 const app=document.getElementById("app"),straat=document.getElementById("straat"),beeld=document.getElementById("sb-beeld");
 function vulStraat(p,m){
   zet("sb-img",m.img,m.kop);
+  const f=focus[m.img.replace(/^img\/|\.jpg$/g,"")]??60;
+  document.getElementById("sb-img").style.setProperty("--focus",f+"%");
+  document.getElementById("sb-img").style.setProperty("--zoom",zoom[m.img.replace(/^img\/|\.jpg$/g,"")]??1);
   document.getElementById("sb-achter").style.backgroundImage=`url("${m.img}")`;
   txt("sb-jaar",m.jaarTekst);txt("sb-jaar-klein",m.jaarTekst+" · ");txt("sb-soort",`Plek ${plekken.indexOf(p)+1} · ${p.naam}${p.adres&&p.adres!==p.naam?" · "+p.adres:""}`);txt("sb-titel",m.kop);txt("sb-tekst",m.tekst);
   chips(document.getElementById("sb-chips"),p);
@@ -432,6 +444,15 @@ document.getElementById("volgende").onclick=()=>{const n=plekken.indexOf(byId[hu
 const lb=document.getElementById("lichtbak");
 function vergroot(img){zet("lichtbak-img",img.src,img.alt);lb.hidden=false}
 document.getElementById("sb-img").onclick=e=>vergroot(e.currentTarget);
+document.getElementById("sb-heel").onclick=()=>vergroot(document.getElementById("sb-img"));
+// vul het scherm (bijsnijden op het onderwerp), tenzij er dan te veel van de foto wegvalt
+function pasBeeld(){
+  const i=document.getElementById("sb-img");if(!i.naturalWidth)return;
+  const ri=i.naturalWidth/i.naturalHeight,rs=beeld.clientWidth/Math.max(1,beeld.clientHeight);
+  beeld.classList.toggle("heel",1-Math.min(ri/rs,rs/ri)>0.45);
+}
+document.getElementById("sb-img").addEventListener("load",pasBeeld);
+addEventListener("resize",pasBeeld);
 document.getElementById("foto").onclick=()=>vergroot(document.getElementById("foto-img"));
 lb.onclick=()=>{lb.hidden=true};
 document.addEventListener("keydown",e=>{
